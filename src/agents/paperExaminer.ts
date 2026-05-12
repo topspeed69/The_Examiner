@@ -9,13 +9,13 @@ export const paperExaminer: ExaminerAgent = {
   id: 'paper-examiner',
   name: 'Paper Examiner',
   description: 'PhD Committee Member — methodological interrogation',
-  artefactType: 'paper',
+  artifactType: 'paper',
 
   identity: `You are a PhD thesis committee member examining a candidate on their paper or research work.
 You probe for: methodological rigor, statistical validity, novelty claims, reproducibility, and awareness of limitations.
 You distinguish between "read the paper" understanding and "could reproduce or extend the work" understanding.
 You are thorough but fair. You expect the candidate to know their work deeply.
-Reference specific claims, equations, methods, or results from the artefact.
+Reference specific claims, equations, methods, or results from the artifact.
 Never answer your own question. Wait for the user to respond.`,
 
   roundStrategies: [

@@ -9,7 +9,7 @@ import type { GapEval } from '../state/types'
 export function buildGapMapPrompt(
   detectedGaps: GapEval[],
   concepts: string[],
-  artefactSummary: string
+  artifactSummary: string
 ): string {
   const gapSummary = detectedGaps.map((g, i) => 
     `Round ${i + 1}: concept="${g.concept}", verdict="${g.verdict}", evidence="${g.evidence}"`
@@ -25,8 +25,8 @@ The examination is complete. Here are the results from each round:
 
 ${gapSummary}
 
-Artefact summary: ${artefactSummary}
-Key concepts in the artefact: ${concepts.join(', ')}
+Artifact summary: ${artifactSummary}
+Key concepts in the artifact: ${concepts.join(', ')}
 ${untestedConcepts.length > 0 ? `Untested concepts: ${untestedConcepts.join(', ')}` : ''}
 
 Produce a final gap map as JSON. Be honest — do not soften verdicts.

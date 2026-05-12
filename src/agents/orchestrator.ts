@@ -11,7 +11,7 @@ import { paperExaminer } from './paperExaminer'
 import { designExaminer } from './designExaminer'
 import { genericExaminer } from './genericExaminer'
 
-/** Map artefact type → specialist agent */
+/** Map artifact type → specialist agent */
 const agentRegistry: Record<string, ExaminerAgent> = {
   code: codeExaminer,
   paper: paperExaminer,
@@ -39,11 +39,14 @@ function selectRoundStrategy(agent: ExaminerAgent, currentRound: number, totalRo
   const strategies = agent.roundStrategies
   const numStrategies = strategies.length
 
+  // Safety fallback if accessed before exam begins properly
+  if (currentRound <= 0) return strategies[0]
+
   // Map current round to strategy index based on ratio
   // Round 1 → strategy 0, last round → last strategy
   const ratio = (currentRound - 1) / Math.max(totalRounds - 1, 1)
   const strategyIndex = Math.min(
-    Math.floor(ratio * numStrategies),
+    Math.max(Math.floor(ratio * numStrategies), 0),
     numStrategies - 1
   )
 
@@ -52,7 +55,7 @@ function selectRoundStrategy(agent: ExaminerAgent, currentRound: number, totalRo
 
 /** Assemble the complete system prompt for a given round */
 export function orchestrate(config: OrchestratorConfig): OrchestratorOutput {
-  const agent = agentRegistry[config.artefactType] || genericExaminer
+  const agent = agentRegistry[config.artifactType] || genericExaminer
   const strategy = selectRoundStrategy(agent, config.currentRound, config.totalRounds)
   const persona = personaModifiers[config.persona]
 
@@ -67,13 +70,13 @@ ${persona}
 
 ---
 
-The artefact under examination is:
+The artifact under examination is:
 
-<artefact>
-${config.artefact.slice(0, 6000)}
-</artefact>
+<artifact>
+${config.artifact.slice(0, 6000)}
+</artifact>
 
-Domain: ${config.domain || 'Infer from artefact'}
+Domain: ${config.domain || 'Infer from artifact'}
 Round: ${config.currentRound} of ${config.totalRounds}
 Mode: ${strategy.mode}
 ${gapContext}
@@ -94,7 +97,7 @@ The evaluation must be valid JSON in this exact format:
   "concept": "name of the specific concept you tested",
   "verdict": "solid" | "shaky" | "gap",
   "evidence": "one sentence explaining what their answer revealed about their understanding",
-  "teach": "if verdict is shaky or gap: 2-3 sentence explanation of the correct answer, referencing the artefact. if solid: null"
+  "teach": "if verdict is shaky or gap: 2-3 sentence explanation of the correct answer, referencing the artifact. if solid: null"
 }
 </gap_eval>
 
@@ -108,7 +111,7 @@ After the <gap_eval> block, continue the conversation naturally:
 - If shaky: point out what they missed, teach briefly, then continue
 - If gap: explain the correct answer clearly, then continue
 
-Remember: Ask ONE question at a time. Be specific. Reference the artefact directly.
+Remember: Ask ONE question at a time. Be specific. Reference the artifact directly.
 Do NOT answer your own question before the user responds.`
 
   return {
@@ -121,5 +124,5 @@ Do NOT answer your own question before the user responds.`
 
 /** Build the initial examination prompt (first question) */
 export function buildFirstQuestionPrompt(): string {
-  return `Begin the examination. Ask your first question based on the round instruction and the artefact provided. Remember: ask ONE specific question only.`
+  return `Begin the examination. Ask your first question based on the round instruction and the artifact provided. Remember: ask ONE specific question only.`
 }

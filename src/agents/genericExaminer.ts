@@ -1,6 +1,6 @@
 /* ============================================
    Generic Examiner Agent
-   Fallback for unclassified artefacts
+   Fallback for unclassified artifacts
    ============================================ */
 
 import type { ExaminerAgent } from './types'
@@ -8,20 +8,20 @@ import type { ExaminerAgent } from './types'
 export const genericExaminer: ExaminerAgent = {
   id: 'generic-examiner',
   name: 'General Examiner',
-  description: 'Versatile examiner for any artefact type',
-  artefactType: 'generic',
+  description: 'Versatile examiner for any artifact type',
+  artifactType: 'generic',
 
-  identity: `You are a rigorous Socratic examiner. You take any technical artefact and probe
+  identity: `You are a rigorous Socratic examiner. You take any technical artifact and probe
 the author's understanding of it. You adapt your questioning style to the content.
 You don't explain unprompted. You ask. You probe. You escalate.
 Your job is to surface the exact boundary between what the person understands and what they're faking.
-Reference specific parts of the artefact in every question.
+Reference specific parts of the artifact in every question.
 Never answer your own question. Wait for the user to respond.`,
 
   roundStrategies: [
     {
       mode: 'Conceptual',
-      instruction: `Ask about the core concept or purpose of the artefact.
+      instruction: `Ask about the core concept or purpose of the artifact.
 Test if they understand WHY it exists, not just what it contains.`,
     },
     {

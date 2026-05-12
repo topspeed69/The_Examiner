@@ -7,16 +7,4 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
-  server: {
-    proxy: {
-      '/examine': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
-      '/classify': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
-    },
-  },
 })

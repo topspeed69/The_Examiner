@@ -1,8 +1,10 @@
 import type { ExamState, ExamAction } from './types'
 
+const hasOnboarded = typeof window !== 'undefined' ? localStorage.getItem('examiner_onboarded') === 'true' : true
+
 export const initialState: ExamState = {
-  phase: 'IDLE',
-  artefact: '',
+  phase: hasOnboarded ? 'IDLE' : 'ONBOARDING',
+  artifact: '',
   domain: '',
   classification: null,
   rounds: 5,
@@ -19,8 +21,15 @@ export const initialState: ExamState = {
 
 export function examReducer(state: ExamState, action: ExamAction): ExamState {
   switch (action.type) {
-    case 'SET_ARTEFACT':
-      return { ...state, artefact: action.payload }
+    case 'SET_PHASE':
+      return { ...state, phase: action.payload }
+
+    case 'COMPLETE_ONBOARDING':
+      localStorage.setItem('examiner_onboarded', 'true')
+      return { ...state, phase: 'IDLE' }
+
+    case 'SET_ARTIFACT':
+      return { ...state, artifact: action.payload }
 
     case 'SET_DOMAIN':
       return { ...state, domain: action.payload }

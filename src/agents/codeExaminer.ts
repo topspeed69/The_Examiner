@@ -9,7 +9,7 @@ export const codeExaminer: ExaminerAgent = {
   id: 'code-examiner',
   name: 'Code Examiner',
   description: 'Senior Staff Engineer — live code review interrogation',
-  artefactType: 'code',
+  artifactType: 'code',
 
   identity: `You are a Senior Staff Engineer conducting a live code review examination.
 You don't just read code — you interrogate the author's understanding of WHY they wrote it this way.

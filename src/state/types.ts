@@ -2,13 +2,13 @@
    The Examiner — Type Definitions
    ============================================ */
 
-export type Phase = 'IDLE' | 'CLASSIFYING' | 'EXAMINING' | 'TEACHING' | 'GAP_MAP'
+export type Phase = 'ONBOARDING' | 'IDLE' | 'CLASSIFYING' | 'EXAMINING' | 'TEACHING' | 'GAP_MAP' | 'ARCHIVE'
 
 export type Verdict = 'solid' | 'shaky' | 'gap'
 
 export type Persona = 'interviewer' | 'professor' | 'adversarial'
 
-export type ArtefactType = 'code' | 'paper' | 'system_design' | 'generic'
+export type ArtifactType = 'code' | 'paper' | 'system_design' | 'generic'
 
 export interface Message {
   role: 'user' | 'assistant' | 'system'
@@ -23,7 +23,7 @@ export interface GapEval {
 }
 
 export interface Classification {
-  type: ArtefactType
+  type: ArtifactType
   language?: string
   framework?: string
   field?: string
@@ -46,7 +46,7 @@ export interface GapMapData {
 
 export interface ExamState {
   phase: Phase
-  artefact: string
+  artifact: string
   domain: string
   classification: Classification | null
   rounds: number
@@ -62,7 +62,7 @@ export interface ExamState {
 }
 
 export type ExamAction =
-  | { type: 'SET_ARTEFACT'; payload: string }
+  | { type: 'SET_ARTIFACT'; payload: string }
   | { type: 'SET_DOMAIN'; payload: string }
   | { type: 'SET_ROUNDS'; payload: number }
   | { type: 'SET_PERSONA'; payload: Persona }
@@ -81,4 +81,6 @@ export type ExamAction =
   | { type: 'FINISH_EXAM' }
   | { type: 'SET_GAP_MAP'; payload: GapMapData }
   | { type: 'SET_ERROR'; payload: string }
+  | { type: 'SET_PHASE'; payload: Phase }
+  | { type: 'COMPLETE_ONBOARDING' }
   | { type: 'RESET' }

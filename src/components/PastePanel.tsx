@@ -1,63 +1,79 @@
-/* ============================================
-   PastePanel — Artefact Input + Session Config
-   ============================================ */
-
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import type { ExamState, ExamAction, Persona } from '../state/types'
+import { chatComplete } from '../lib/llm'
 import { buildClassifierPrompt, parseClassification } from '../agents/classifier'
+import { Terminal, Shield, Sparkles, Activity, Layers, Cpu, Send, Info, Paperclip, FolderOpen, CheckCircle2 } from 'lucide-react'
 
 interface Props {
   state: ExamState
   dispatch: React.Dispatch<ExamAction>
 }
 
-const PERSONA_OPTIONS: Array<{ id: Persona; label: string; desc: string; icon: string }> = [
-  { id: 'interviewer', label: 'Interviewer', desc: 'Senior tech interviewer — structured & fair', icon: '⎔' },
-  { id: 'professor', label: 'Professor', desc: 'Socratic professor — guides with questions', icon: '◈' },
-  { id: 'adversarial', label: 'Tech Lead', desc: 'Adversarial tech lead — challenges everything', icon: '⬡' },
+const PERSONA_OPTIONS: Array<{ id: Persona; label: string; desc: string; icon: React.ReactNode }> = [
+  { id: 'interviewer', label: 'Standard Interview', desc: 'Baseline evaluation protocols.', icon: <Shield size={16} /> },
+  { id: 'professor', label: 'Socratic Inquiry', desc: 'Deep conceptual probing.', icon: <Sparkles size={16} /> },
+  { id: 'adversarial', label: 'Aggressive Interrogation', desc: 'Stress-test all assumptions.', icon: <Activity size={16} /> },
 ]
-
-const ROUND_OPTIONS = [3, 5, 10]
 
 export default function PastePanel({ state, dispatch }: Props) {
   const [isClassifying, setIsClassifying] = useState(false)
-  const tokenEstimate = Math.ceil(state.artefact.length / 4)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const folderInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const content = event.target?.result as string
+      dispatch({ type: 'SET_ARTIFACT', payload: content })
+    }
+    reader.readAsText(file)
+  }
+
+  const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    let combinedContent = ""
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      const text = await file.text()
+      combinedContent += `--- File: ${file.webkitRelativePath || file.name} ---\n${text}\n\n`
+    }
+    dispatch({ type: 'SET_ARTIFACT', payload: combinedContent })
+  }
+  const tokenEstimate = Math.ceil(state.artifact.length / 4)
   const isTooLong = tokenEstimate > 6000
 
   const handleClassifyAndBegin = useCallback(async () => {
-    if (!state.artefact.trim()) return
+    if (!state.artifact.trim()) return
 
     setIsClassifying(true)
     dispatch({ type: 'START_CLASSIFY' })
 
     try {
-      const prompt = buildClassifierPrompt(state.artefact, state.domain)
+      const prompt = buildClassifierPrompt(state.artifact, state.domain)
 
-      const response = await fetch('/classify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 1024,
-        }),
+      const content = await chatComplete({
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 1024,
+        temperature: 0.3
       })
 
-      if (!response.ok) throw new Error('Classification failed')
-
-      const data = await response.json()
-      const classification = parseClassification(data.content)
+      const classification = parseClassification(content)
 
       if (classification) {
         dispatch({ type: 'SET_CLASSIFICATION', payload: classification })
       } else {
-        // Fallback: set generic classification
         dispatch({
           type: 'SET_CLASSIFICATION',
           payload: {
             type: 'generic',
             concepts: [],
             complexity: 'intermediate',
-            summary: 'Artefact classification unavailable',
+            summary: 'Artifact classification unavailable',
           },
         })
       }
@@ -73,205 +89,211 @@ export default function PastePanel({ state, dispatch }: Props) {
       })
     } finally {
       setIsClassifying(false)
+      dispatch({ type: 'BEGIN_EXAM' })
     }
-  }, [state.artefact, state.domain, dispatch])
+  }, [state.artifact, state.domain, dispatch])
 
-  const handleBeginExam = useCallback(() => {
-    dispatch({ type: 'BEGIN_EXAM' })
-  }, [dispatch])
-
-  const isReady = state.artefact.trim().length > 0 && !isTooLong
-  const hasClassification = state.classification !== null
+  const isReady = state.artifact.trim().length > 0 && !isTooLong
 
   return (
-    <div className="animate-fade-in space-y-8">
-      {/* Artefact Input */}
-      <section>
-        <label
-          className="mb-3 block text-[0.65rem] uppercase tracking-[0.25em] text-text-muted"
-          style={{ fontFamily: 'var(--font-label)' }}
-          htmlFor="artefact-input"
-        >
-          Paste your artefact
-        </label>
-        <textarea
-          id="artefact-input"
-          className="exam-textarea w-full rounded-none p-5"
-          rows={14}
-          placeholder="Paste your code, paper excerpt, or system design here..."
-          value={state.artefact}
-          onChange={(e) => dispatch({ type: 'SET_ARTEFACT', payload: e.target.value })}
-          spellCheck={false}
-        />
-        <div className="mt-2 flex items-center justify-between text-[0.65rem]" style={{ fontFamily: 'var(--font-label)' }}>
-          <span className={`${isTooLong ? 'text-accent-gap' : 'text-text-muted'}`}>
-            ~{tokenEstimate.toLocaleString()} tokens
-          </span>
-          {isTooLong && (
-            <span className="text-accent-gap">
-              ⚠ Artefact too large — will be truncated to ~6k tokens
-            </span>
-          )}
+    <div className="flex-grow flex flex-col xl:flex-row gap-8 w-full h-full pb-24 md:pb-0 animate-in pt-12 px-8 md:px-12">
+      
+      {/* Left Content Area (Input) */}
+      <div className="flex-grow flex flex-col h-full gap-6 xl:w-2/3">
+        <div className="flex justify-between items-end">
+          <div>
+            <h1 className="text-3xl font-display font-bold text-on-surface tracking-tight mb-1">Entry Portal</h1>
+            <p className="text-on-surface-variant text-sm">Submit your architectural logic or code for evaluation.</p>
+          </div>
+          <div className={`px-4 py-1.5 rounded-full border text-[10px] font-bold tracking-[0.1em] uppercase transition-all duration-500 ${
+            isClassifying ? 'text-primary border-primary bg-primary/10 animate-pulse' : 
+            isReady ? 'text-success border-success/30 bg-success/10' : 
+            'text-on-surface-variant border-white/10 bg-white/5'
+          }`}>
+            {isClassifying ? 'Initializing System' : isReady ? 'Artifact Secured' : 'Awaiting Input'}
+          </div>
         </div>
-      </section>
-
-      {/* Domain Hint */}
-      <section>
-        <label
-          className="mb-3 block text-[0.65rem] uppercase tracking-[0.25em] text-text-muted"
-          style={{ fontFamily: 'var(--font-label)' }}
-          htmlFor="domain-input"
-        >
-          Domain hint <span className="text-text-muted/50">(optional)</span>
-        </label>
-        <input
-          id="domain-input"
-          type="text"
-          className="exam-textarea w-full rounded-none px-4 py-3 text-sm"
-          placeholder="e.g. FastAPI backend, ML paper, React app, distributed systems..."
-          value={state.domain}
-          onChange={(e) => dispatch({ type: 'SET_DOMAIN', payload: e.target.value })}
-        />
-      </section>
-
-      {/* Round Count */}
-      <section>
-        <label
-          className="mb-3 block text-[0.65rem] uppercase tracking-[0.25em] text-text-muted"
-          style={{ fontFamily: 'var(--font-label)' }}
-        >
-          Examination rounds
-        </label>
-        <div className="flex gap-3">
-          {ROUND_OPTIONS.map((n) => (
-            <button
-              key={n}
-              onClick={() => dispatch({ type: 'SET_ROUNDS', payload: n })}
-              className={`
-                px-6 py-3 text-sm transition-all duration-200
-                border cursor-pointer
-                ${state.rounds === n
-                  ? 'border-accent-examiner bg-accent-examiner/10 text-accent-examiner'
-                  : 'border-border-subtle text-text-secondary hover:border-border-active hover:text-text-primary'
-                }
-              `}
-              style={{ fontFamily: 'var(--font-mono)' }}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Persona Selection */}
-      <section>
-        <label
-          className="mb-3 block text-[0.65rem] uppercase tracking-[0.25em] text-text-muted"
-          style={{ fontFamily: 'var(--font-label)' }}
-        >
-          Examiner persona
-        </label>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          {PERSONA_OPTIONS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => dispatch({ type: 'SET_PERSONA', payload: p.id })}
-              className={`
-                glass-card cursor-pointer p-5 text-left transition-all duration-200
-                ${state.persona === p.id
-                  ? 'border-accent-examiner bg-accent-examiner/5'
-                  : ''
-                }
-              `}
-            >
-              <div className="mb-2 text-2xl">{p.icon}</div>
-              <div
-                className="mb-1 text-sm font-medium text-text-primary"
-                style={{ fontFamily: 'var(--font-label)' }}
+        
+        <div className="relative flex-grow flex flex-col glass-card min-h-[400px] border-white/10 shadow-2xl">
+          <div className="flex items-center justify-between border-b border-white/5 bg-white/5 px-6 py-3">
+            <div className="flex items-center gap-3">
+              <Terminal size={16} className="text-primary" />
+              <span className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Artifact Data Stream</span>
+            </div>
+            <div className="flex gap-1.5 items-center">
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-primary transition-all"
+                title="Upload File"
               >
-                {p.label}
-              </div>
-              <div className="text-xs text-text-muted">{p.desc}</div>
-            </button>
-          ))}
+                <Paperclip size={14} />
+              </button>
+              <button 
+                onClick={() => folderInputRef.current?.click()}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-primary transition-all"
+                title="Upload Folder"
+              >
+                <FolderOpen size={14} />
+              </button>
+              <div className="w-2 h-2 rounded-full bg-white/10 ml-2"></div>
+              <div className="w-2 h-2 rounded-full bg-white/10"></div>
+              <div className="w-2 h-2 rounded-full bg-primary/40 shadow-[0_0_8px_rgba(56,189,248,0.4)]"></div>
+              <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+              <input 
+                type="file" 
+                ref={folderInputRef} 
+                onChange={handleFolderUpload} 
+                className="hidden" 
+                {...({ webkitdirectory: "", directory: "" } as any)} 
+              />
+            </div>
+          </div>
+          <textarea 
+            className="flex-grow w-full bg-transparent text-on-surface font-code text-sm p-8 resize-none focus:outline-none placeholder-white/10 leading-relaxed scrollbar-thin" 
+            placeholder={`// Paste your code, design docs, or logs here...\n// The Examiner will analyze conceptual integrity.\n// No size limit for local processing.`}
+            spellCheck="false"
+            value={state.artifact}
+            onChange={(e) => dispatch({ type: 'SET_ARTIFACT', payload: e.target.value })}
+          />
+          {/* Subtle cursor indicator when empty */}
+          {!state.artifact && <div className="absolute top-[84px] left-[32px] w-1.5 h-5 bg-primary/40 animate-pulse pointer-events-none rounded-full"></div>}
+          
+          <div className="px-6 py-3 border-t border-white/5 flex justify-between items-center text-[10px] font-medium text-on-surface-variant/40">
+            <span>READY FOR SOCRATIC PROCESSING</span>
+            <span>{state.artifact.length} CHARACTERS</span>
+          </div>
         </div>
-      </section>
+        
+        <button 
+          onClick={handleClassifyAndBegin}
+          disabled={!isReady || isClassifying}
+          className={`group glass-button-primary py-5 text-sm font-bold uppercase tracking-[0.2em] flex justify-center items-center gap-4 shadow-xl ${
+            !isReady || isClassifying ? 'opacity-30 cursor-not-allowed grayscale' : 'hover:shadow-primary/30 active:scale-[0.99]'
+          }`}
+        >
+          <span>{isClassifying ? 'Synchronizing Protocols...' : 'Initiate Examination'}</span>
+          {!isClassifying && <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
+        </button>
+      </div>
 
-      {/* Classification Result */}
-      {hasClassification && state.classification && (
-        <section className="animate-slide-up">
-          <div className="glass-card border-accent-classifier/30 p-5">
-            <div
-              className="mb-2 text-[0.65rem] uppercase tracking-[0.25em] text-accent-classifier"
-              style={{ fontFamily: 'var(--font-label)' }}
-            >
-              ◎ Artefact classified
-            </div>
-            <div className="mb-3 text-sm text-text-primary">{state.classification.summary}</div>
-            <div className="flex flex-wrap gap-2">
-              <span className="bg-accent-classifier/10 px-2 py-1 text-[0.65rem] text-accent-classifier border border-accent-classifier/20">
-                {state.classification.type}
-              </span>
-              {state.classification.language && (
-                <span className="bg-elevated px-2 py-1 text-[0.65rem] text-text-secondary border border-border-subtle">
-                  {state.classification.language}
-                </span>
-              )}
-              {state.classification.framework && (
-                <span className="bg-elevated px-2 py-1 text-[0.65rem] text-text-secondary border border-border-subtle">
-                  {state.classification.framework}
-                </span>
-              )}
-              <span className="bg-elevated px-2 py-1 text-[0.65rem] text-text-secondary border border-border-subtle">
-                {state.classification.complexity}
-              </span>
-            </div>
-            {state.classification.concepts.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {state.classification.concepts.map((c, i) => (
-                  <span key={i} className="text-[0.6rem] text-text-muted">
-                    {c}{i < state.classification!.concepts.length - 1 ? ' ·' : ''}
-                  </span>
+      {/* Right Sidebar (Status) */}
+      <aside className="xl:w-1/3 flex flex-col gap-6 shrink-0 h-full">
+        
+        {/* Operator Status */}
+        <div className="glass-card border-white/10 p-1">
+          <div className="px-5 py-3 border-b border-white/5 bg-white/5 rounded-t-xl flex items-center gap-2">
+            <Activity size={14} className="text-primary" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface">System Diagnostics</span>
+          </div>
+          <div className="p-5 flex flex-col gap-4">
+            <DiagnosticRow label="Operator" value="Ready" status="online" />
+            <DiagnosticRow label="System" value={isClassifying ? "Busy" : "Idle"} status={isClassifying ? "busy" : "idle"} />
+            <DiagnosticRow label="Uplink" value="Stable" status="online" />
+          </div>
+        </div>
+
+        {/* Context Info */}
+        <div className="glass-card border-white/10 flex-grow flex flex-col">
+          <div className="px-5 py-3 border-b border-white/5 bg-white/5 rounded-t-xl flex items-center gap-2">
+            <Layers size={14} className="text-primary" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface">Exam Parameters</span>
+          </div>
+          <div className="p-6 space-y-8 flex-grow">
+            
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest flex items-center gap-2">
+                <Shield size={12} /> Analysis Mode
+              </label>
+              <div className="grid grid-cols-1 gap-2">
+                {PERSONA_OPTIONS.map(p => (
+                  <button 
+                    key={p.id}
+                    onClick={() => dispatch({ type: 'SET_PERSONA', payload: p.id })}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left group ${
+                      state.persona === p.id 
+                        ? 'bg-primary/10 border-primary/30 text-on-surface' 
+                        : 'bg-white/5 border-white/5 text-on-surface-variant hover:bg-white/10 hover:border-white/10'
+                    }`}
+                  >
+                    <div className={`transition-colors ${state.persona === p.id ? 'text-primary' : 'group-hover:text-on-surface'}`}>
+                      {p.icon}
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold">{p.label}</div>
+                    </div>
+                    {state.persona === p.id && <CheckCircle2 size={14} className="ml-auto text-primary" />}
+                  </button>
                 ))}
               </div>
-            )}
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest flex items-center gap-2">
+                <Cpu size={12} /> Depth Complexity
+              </label>
+              <select 
+                className="w-full glass-input bg-white/5 text-xs font-bold text-on-surface py-3"
+                value={state.rounds}
+                onChange={(e) => dispatch({ type: 'SET_ROUNDS', payload: Number(e.target.value) })}
+              >
+                <option value={3} className="bg-surface">3 Rounds - Quick Audit</option>
+                <option value={5} className="bg-surface">5 Rounds - Standard Exam</option>
+                <option value={10} className="bg-surface">10 Rounds - Deep Interrogation</option>
+              </select>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest flex items-center gap-2">
+                <Info size={12} /> Target Context
+              </label>
+              <input 
+                className="w-full glass-input text-xs font-bold text-primary placeholder:text-white/10 py-3"
+                placeholder="AUTO-DETECT DOMAIN..."
+                value={state.domain}
+                onChange={(e) => dispatch({ type: 'SET_DOMAIN', payload: e.target.value })}
+              />
+            </div>
           </div>
-        </section>
-      )}
-
-      {/* Action Buttons */}
-      <section className="flex gap-4 pt-4">
-        {!hasClassification ? (
-          <button
-            className="btn-primary"
-            onClick={handleClassifyAndBegin}
-            disabled={!isReady || isClassifying}
-          >
-            {isClassifying ? (
-              <span className="flex items-center gap-3">
-                <span className="inline-block h-3 w-3 animate-spin border border-void border-t-transparent" style={{ borderRadius: '50%' }} />
-                Classifying artefact...
-              </span>
-            ) : (
-              'Analyze & Configure'
-            )}
-          </button>
-        ) : (
-          <button
-            className="btn-primary"
-            onClick={handleBeginExam}
-            disabled={!isReady}
-          >
-            Begin Examination →
-          </button>
-        )}
-      </section>
-
-      {state.error && (
-        <div className="mt-4 border border-accent-gap/30 bg-accent-gap/5 p-4 text-sm text-accent-gap">
-          {state.error}
         </div>
-      )}
+
+        {/* Visual filler */}
+        <div className="glass-card border-white/5 bg-black/40 p-5 overflow-hidden h-36 hidden xl:block relative group">
+          <div className="font-code text-[10px] text-primary/40 whitespace-pre leading-relaxed group-hover:text-primary/60 transition-colors duration-500">
+            &gt; SYSTEM_READY_FOR_DATA<br/>
+            &gt; MEMORY_ALLOCATED: 1024MB<br/>
+            <span className={isReady ? 'text-primary font-bold' : ''}>
+              &gt; {isReady ? 'ARTIFACT_BUFFER_STABLE' : 'WAITING_FOR_STREAM...'}
+            </span><br/>
+            &gt; AGENT_LOADED: {state.persona.toUpperCase()}<br/>
+            &gt; UPLINK_ENCRYPTED: AES-256
+          </div>
+          <div className="absolute bottom-4 right-4 flex gap-1.5">
+             <div className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse"></div>
+             <div className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse delay-150"></div>
+             <div className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse delay-300"></div>
+          </div>
+        </div>
+      </aside>
     </div>
   )
 }
+
+function DiagnosticRow({ label, value, status }: { label: string, value: string, status: 'online' | 'busy' | 'idle' }) {
+  const statusColor = {
+    online: 'bg-success shadow-[0_0_8px_rgba(52,211,153,0.6)]',
+    busy: 'bg-warning shadow-[0_0_8px_rgba(251,191,36,0.6)]',
+    idle: 'bg-on-surface-variant'
+  }[status]
+  
+  return (
+    <div className="flex justify-between items-center border-b border-white/5 pb-2 last:border-0 last:pb-0">
+      <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">{label}</span>
+      <div className="flex items-center gap-2.5">
+        <span className={`text-[10px] font-bold uppercase ${status === 'online' ? 'text-success' : status === 'busy' ? 'text-warning' : 'text-on-surface-variant'}`}>{value}</span>
+        <div className={`w-2 h-2 rounded-full ${statusColor}`}></div>
+      </div>
+    </div>
+  )
+}
+
+

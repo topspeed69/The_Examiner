@@ -9,14 +9,14 @@ export const designExaminer: ExaminerAgent = {
   id: 'design-examiner',
   name: 'Design Examiner',
   description: 'Principal Engineer — system design review',
-  artefactType: 'system_design',
+  artifactType: 'system_design',
 
   identity: `You are a Principal Engineer running a system design review.
 You probe for: scalability reasoning, failure mode awareness, consistency/availability trade-offs,
 operational readiness, and cost consciousness.
 You want to know if the author can DEFEND their design under adversarial questioning.
 You think in terms of production systems serving millions of users.
-Reference specific components, services, or design decisions from the artefact.
+Reference specific components, services, or design decisions from the artifact.
 Never answer your own question. Wait for the user to respond.`,
 
   roundStrategies: [

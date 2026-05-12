@@ -1,73 +1,54 @@
-# React + TypeScript + Vite
+# The Examiner: Socratic Code Interrogation
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A multi-agent Socratic interrogation tool designed to evaluate engineering artefacts (code, papers, designs) via NVIDIA NIM-hosted models.
 
-Currently, two official plugins are available:
+## 🚀 Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### 1. Backend Configuration
+The backend is a FastAPI proxy that handles streaming inference from NVIDIA NIM.
 
-## React Compiler
+1.  **Navigate to the backend directory**:
+    ```bash
+    cd backend
+    ```
+2.  **Set up environment variables**:
+    Create a `.env` file based on `.env.example`:
+    ```bash
+    cp .env.example .env
+    ```
+    Add your `NIM_API_KEY` to the `.env` file.
+3.  **Run the backend**:
+    We use `uv` for lightning-fast Python dependency management.
+    ```bash
+    uv run main.py
+    ```
+    The server will start at `http://localhost:8001`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 2. Frontend Configuration
+The frontend is a React + Vite application with a Cyberpunk Terminal aesthetic.
 
-## Expanding the ESLint configuration
+1.  **Navigate to the root directory**:
+    ```bash
+    cd ..
+    ```
+2.  **Install dependencies**:
+    ```bash
+    npm install
+    ```
+3.  **Run the development server**:
+    ```bash
+    npm run dev
+    ```
+    The app will be available at `http://localhost:5173`.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🛠️ Testing the Pipeline
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+1.  **Entry Portal**: Paste a code snippet or design doc into the main terminal.
+2.  **Initiate**: Click `INITIATE_EXAMINATION`. The system will classify the artefact and start the Socratic loop.
+3.  **Respond**: Answer the Examiner's questions. If you exhibit a "gap" in understanding, the **Teach Mode** will activate.
+4.  **Report**: After the rounds are complete, view the **Gap Map** for a full diagnostic of your conceptual ownership.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🧰 Tech Stack
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS v4, Mermaid.js (Diagrams), Lucide (Icons).
+- **Backend**: FastAPI, SSE (Server-Sent Events), NVIDIA NIM API.
+- **Agents**: Multi-agent orchestration (Classifier, Teacher, GapAnalyst).

@@ -2,7 +2,7 @@
    Agent Type Definitions
    ============================================ */
 
-import type { ArtefactType, Persona } from '../state/types'
+import type { ArtifactType, Persona } from '../state/types'
 
 /** Strategy for a specific round of examination */
 export interface RoundStrategy {
@@ -15,7 +15,7 @@ export interface ExaminerAgent {
   id: string
   name: string
   description: string
-  artefactType: ArtefactType
+  artifactType: ArtifactType
   identity: string
   roundStrategies: RoundStrategy[]
   gapCriteria: string[]
@@ -23,9 +23,9 @@ export interface ExaminerAgent {
 
 /** Configuration passed to the orchestrator */
 export interface OrchestratorConfig {
-  artefact: string
+  artifact: string
   domain: string
-  artefactType: ArtefactType
+  artifactType: ArtifactType
   persona: Persona
   totalRounds: number
   currentRound: number
