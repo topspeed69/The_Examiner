@@ -23,7 +23,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ dispatch }) => {
   }
 
   return (
-    <div className="flex-grow flex flex-col justify-center items-center px-6 md:px-12 max-w-5xl mx-auto w-full py-12 overflow-auto">
+    <div className="flex-grow flex flex-col justify-start md:justify-center items-center px-6 md:px-12 max-w-5xl mx-auto w-full py-8 md:py-12 overflow-y-auto">
       {/* Briefing Container */}
       <div className="w-full glass-card overflow-hidden border border-white/10 shadow-2xl shadow-black/50">
         {/* Progress Bar Header */}
@@ -39,7 +39,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ dispatch }) => {
           </div>
         </div>
 
-        <div className="p-8 md:p-14 min-h-[450px] flex flex-col">
+        <div className="p-8 md:p-14 min-h-[400px] md:min-h-[450px] flex flex-col">
           {/* Step 1: Interrogation */}
           {currentStep === 1 && (
             <div className="animate-in">
@@ -126,7 +126,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ dispatch }) => {
           )}
 
           {/* Navigation Controls */}
-          <div className="mt-auto flex justify-between items-center pt-10 border-t border-white/5">
+          <div className="mt-8 md:mt-auto flex justify-between items-center pt-8 border-t border-white/5">
             <button
               className="px-6 py-2.5 rounded-xl text-on-surface-variant hover:text-on-surface flex items-center gap-2 disabled:opacity-20 disabled:cursor-not-allowed transition-all hover:bg-white/5"
               onClick={prevStep}
