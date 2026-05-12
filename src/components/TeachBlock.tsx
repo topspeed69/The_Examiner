@@ -1,4 +1,4 @@
-import { AlertTriangle, Search, BookOpen, BrainCircuit, X, CheckCircle2, ChevronRight, Info, Zap, Paperclip, FolderOpen } from 'lucide-react'
+import { Search, BookOpen, BrainCircuit, X, CheckCircle2, ChevronRight, Info, Zap, Paperclip, FolderOpen } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import mermaid from 'mermaid'
 

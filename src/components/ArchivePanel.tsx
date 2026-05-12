@@ -4,7 +4,6 @@ import {
   Calendar, 
   Fingerprint, 
   History, 
-  School, 
   ShieldCheck, 
   AlertTriangle, 
   ChevronRight, 

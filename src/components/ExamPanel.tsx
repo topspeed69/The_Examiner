@@ -4,7 +4,7 @@ import { useExamStream } from '../hooks/useExamStream'
 import { orchestrate, buildFirstQuestionPrompt } from '../agents/orchestrator'
 import { extractGapEval, stripGapEvalTags, hasCompleteGapEval } from '../utils/parseGapEval'
 import TeachBlock from './TeachBlock'
-import { BrainCircuit, Send, User, AlertCircle, FileText, ChevronRight, XCircle, GraduationCap, History, Paperclip, Terminal, Loader2, FolderOpen } from 'lucide-react'
+import { BrainCircuit, Send, User, AlertCircle, FileText, XCircle, GraduationCap, History, Paperclip, Terminal, Loader2, FolderOpen } from 'lucide-react'
 
 interface Props {
   state: ExamState
@@ -131,7 +131,7 @@ export default function ExamPanel({ state, dispatch }: Props) {
       if (gapWithTeach) {
         setLastGapTeach({
           concept: gapWithTeach.concept,
-          verdict: gapWithTeach.verdict,
+          verdict: gapWithTeach.verdict as 'shaky' | 'gap',
           teach: gapWithTeach.teach!
         })
       } else {
